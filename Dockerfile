@@ -1,39 +1,43 @@
 
 # Pull base image
-FROM resin/rpi-raspbian:wheezy
-FROM hypriot/rpi-golang:1.4.2
+FROM resin/rpi-raspbian:jessie
 MAINTAINER Dieter Reuter <dieter@hypriot.com>
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    gcc \
-    libc6-dev \
-    make \
-    git \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
+# update and wget
+RUN apt-get -qq update && \
+    apt-get -qqy install wget && \
+    apt-get -qqy install bison ed gawk gcc libc6-dev make
+	
 
-# Compile Go from source
-ENV GOROOT_BOOTSTRAP /goroot
-ENV GOLANG_VERSION 1.5
-ADD ./etc/services /etc/services
-RUN \
-    mkdir -p /goroot1.5 && \
-    git clone https://go.googlesource.com/go /goroot1.5 && \
-    cd /goroot1.5 && \
-    git checkout go$GOLANG_VERSION && \
-    cd /goroot1.5/src && \
-    GOARM=6 ./all.bash
+RUN wget --no-check-certificate https://storage.googleapis.com/golang/go1.4.3.src.tar.gz && \
+    tar zxvf go1.4.3.src.tar.gz && \
+    rm go1.4.3.src.tar.gz && \
+    mv go opt/go1.4.3
 
-# Set environment variables
-ENV GOROOT /goroot1.5
-ENV GOPATH /gopath1.5
-ENV GOARM 6
-ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
+WORKDIR /opt/go1.4.3/src
+RUN ./make.bash
 
-# Define working directory
-WORKDIR /gopath1.5
+
+ENV GO_VERSION=1.6.2
+# Install go 1.6.2
+
+WORKDIR /opt
+RUN wget --no-check-certificate https://storage.googleapis.com/golang/go$GO_VERSION.src.tar.gz && \
+    tar zxvf go$GO_VERSION.src.tar.gz && \
+    rm go$GO_VERSION.src.tar.gz
+WORKDIR /opt/go/src
+RUN GOROOT_BOOTSTRAP=/opt/go1.4.3 GOOS=linux GOARCH=arm GOARM=7 ./make.bash
+WORKDIR /opt
+RUN rm -rf go1.4.3
+
+# env variables
+RUN mkdir /go
+ENV GOROOT /opt/go
+ENV GOPATH /go
+ENV PATH $PATH:$GOROOT/bin:$GOPATH/bin
+
+RUN apt-get update && \
+    apt-get -y install git-core
 
 # Define default command
 CMD ["bash"]
