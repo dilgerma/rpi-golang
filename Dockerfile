@@ -18,7 +18,7 @@ WORKDIR /opt/go1.4.3/src
 RUN ./make.bash
 
 
-ENV GO_VERSION=1.6.2
+ENV GO_VERSION=1.5.2
 # Install go 1.6.2
 
 WORKDIR /opt
